@@ -1,0 +1,352 @@
+
+
+# EDA
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+```{r}
+df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+colnames(df)
+```
+```{r}
+unique(df$party_detailed)
+unique(df$party_simplified)
+```
+
+### lets look at each county and party votes at each county
+
+
+```{r}
+county_party_groupby <- df |> group_by(county_name, party_simplified)|> summarise(total_votes = sum(votes),.groups = "drop")
+
+county_party_groupby
+```
+
+### lets visualize the results above
+
+
+
+
+
+## lets resume again
+
+```{r}
+df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+df$party_simplified[is.na(df$party_simplified)] <- "OTHER"
+counties <- unique(df$county_name) ## will sort later
+parties <- unique(df$party_simplified)
+## its better to store already group by-ed DF as well, since its quick filter 
+county_party_groupby <- df |> group_by(county_name, party_simplified)|> summarise(total_votes = sum(votes),.groups = "drop")
+```
+
+
+
+```{r}
+county_party_groupby
+```
+
+```{r}
+colnames(df)
+```
+
+
+
+```{r}
+unique(df$office)
+```
+
+
+```{r}
+unique(df$magnitude)
+```
+
+
+```{r}
+unique(df$mode)
+```
+
+
+## Questions I need to address
+
+- *What are percentage of ABSENTEE and EARLY are present ?*
+- Visualize the ABSENTEE, EARLY , PROVISIONAL or ELECTION DAY pie chart, overall , county-wise , party-wise
+- (Side Note) There can be two types of visualizations, Aggregate of choosen options, and also comparsion among choosen options
+
+- *What OFFICE has more major dominance by one party (competitive/one-sided) ? (I will make between DEMO and REPUB only)*
+- Visualize Sorted bar/col plot with One-sided to competitive OFFICES, each of the bar colored based on DEMO and REPUB
+- Allowing user to look at top N or choose what they are specifically looking for and also allowing user to sort based on One-sided-ness or competitive-ness
+- Toggle between Votes Diff or Percentage Diff
+
+- *Votes distribution across County Maybe Geographical Plot (is it possible?)*
+
+
+
+
+```{r}
+### Lets just care about few columns and use it for plotting of the above question
+important_cols<- c("county_name","office","candidate","votes","mode","party_simplified")
+df <- df[,important_cols]
+
+### get the count and percentage of ABS, Ear etc
+df |> count(mode) 
+```
+
+- This is interesting, I need to figure out a way to address these empty mode values, 
+- **I can make them default which would be election day. Since its not election day , its likely that these would have been marked by Authorties** (Need to mention as SERIOUS bias)
+- So lets convert them into ELECTION DAY mode
+
+- OR Maybe its better to mark them UNKNOWN and exclude from plotting I suppose
+
+```{r}
+df <- df |> mutate(
+  mode = ifelse(is.na(mode) | mode == "", "UNKNOWN",mode)
+)
+df |> count(mode) 
+df |> count(party_simplified)
+```
+
+```{r}
+## Suppose we choose county and party
+
+SelectedCounty <- c("WHITLEY","MARION")
+SelectedParty <- c("DEMOCRAT","REPUBLICAN")
+
+##- *What are percentage of ABSENTEE and EARLY are present ?*
+
+## for aggregated plot 
+aggregate_mode_df <- df |> 
+  filter(party_simplified %in% SelectedParty, county_name %in% SelectedCounty) |> 
+      group_by(mode) |> summarise(total_votes = sum(votes),.groups = "drop") |> mutate(percent = total_votes*100/sum(total_votes))
+
+## for comparison plot
+comparison_mode_df <- df |> group_by(mode,party_simplified,county_name) |> 
+  summarise(total_votes = sum(votes),.groups = "drop") |> filter(party_simplified %in% SelectedParty,  county_name %in% SelectedCounty) |> mutate(percent = total_votes*100/sum(total_votes))
+
+
+```
+
+
+```{r}
+## Pie chart plotting 
+aggregate_mode_df |> filter(mode != "UNKNOWN") |>
+ggplot( aes(x = "", y = percent, fill = mode)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  labs(
+    title = "Vote Share by Voting Mode",
+    fill = "Voting Mode"
+  ) + theme_void()
+```
+
+```{r}
+comparison_mode_df |>
+  filter(mode != "UNKNOWN") |>
+  ggplot(aes(x = "", y = total_votes, fill = mode)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  facet_wrap(~ party_simplified) +
+  theme_void() +
+  labs(
+    title = "Vote Share by Voting Mode by Party",
+    fill = "Mode"
+  )
+```
+
+
+
+
+
+- *What OFFICE has more major dominance by one party (competitive/one-sided) ? (I will make between DEMO and REPUB only)*
+- Visualize Sorted bar/col plot with One-sided to competitive OFFICES, each of the bar colored based on DEMO and REPUB
+- Allowing user to look at top N or choose what they are specifically looking for and also allowing user to sort based on One-sided-ness or competitive-ness
+- Toggle between Votes Diff or Percentage Diff
+
+
+```{r}
+## groupby office , party and county
+groupbyOffice_party_county <- df |> filter(party_simplified %in% c("DEMOCRAT","REPUBLICAN"), county_name %in% SelectedCounty) |>
+      group_by(office,party_simplified,county_name) |> summarise(total_votes = sum(votes),.groups = "drop") 
+        
+```
+
+
+```{r}
+## aggregate county office diff(demo vs repub)
+
+agg_office_diff_df <- df |> filter(party_simplified %in% c("DEMOCRAT","REPUBLICAN"), county_name %in% SelectedCounty) |>
+      group_by(office,party_simplified) |> summarise(total_votes = sum(votes),.groups = "drop") |>  
+    pivot_wider( names_from  = party_simplified,values_from = total_votes,values_fill = 0) |> ## pivoting only party simplified and total_votes 
+  mutate(vote_diff = DEMOCRAT - REPUBLICAN)
+
+```
+
+
+```{r}
+ ggplot(agg_office_diff_df, aes(x = office, y = vote_diff, fill = vote_diff > 0)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Democrat vs Republican Vote Difference by Office",
+    y = "Vote Difference (DEM - REP)"
+  ) +
+  scale_fill_manual(values = c("red", "blue"), guide = "none")
+
+```
+
+### I will try to use Map , I am doing this first time, hopefully it works out
+
+```{r}
+library(sf)
+library(tigris)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+options(tigris_use_cache = TRUE)
+
+indiana_counties <- counties(
+  state = "IN",
+  cb = TRUE,        
+  year = 2022
+)
+
+```
+
+```{r}
+ggplot(indiana_counties) +
+  geom_sf(fill = "white", color = "black") +
+  labs(title = "Indiana Counties") +
+  theme_void()
+
+```
+
+```{r}
+#I will need fresh df since I used only important_cols for my analysis so far
+
+new_df <- read.csv("../2018-in-precinct-general.csv",header = TRUE)
+
+county_votes <- new_df |>
+  group_by(county_fips) |>
+  summarise(
+    total_votes = sum(votes),
+    .groups = "drop"
+  )
+
+
+county_votes$county_fips <- as.character(county_votes$county_fips)
+
+
+map_df <- indiana_counties |>
+  mutate(county_fips = GEOID) |>
+  left_join(county_votes, by = "county_fips")
+
+ggplot(map_df) +
+  geom_sf(aes(fill = total_votes), color = "white") +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(
+    title = "Total Votes by County (Indiana)",
+    fill = "Votes"
+  ) +
+  theme_void()
+
+```
+
+
+```{r}
+## Lets do DEMO vs REPUBLIC
+county_demo_republican <- new_df |> filter(party_simplified %in% c("DEMOCRAT","REPUBLICAN")) |> group_by(county_name,county_fips,party_simplified) |> summarise(total_votes = sum(votes),.groups = "drop") |> pivot_wider(names_from = party_simplified, values_from = total_votes,values_fill = 0) |> mutate(vote_diff = DEMOCRAT - REPUBLICAN)
+
+county_demo_republican
+```
+
+```{r}
+county_demo_republican$county_fips <- as.character(county_demo_republican$county_fips)
+map_df <- indiana_counties |>
+  mutate(county_fips = GEOID) |>
+  left_join(county_demo_republican, by = "county_fips")
+
+
+
+
+ggplot(map_df) +
+  geom_sf(aes(fill = vote_diff), color = "white", linewidth = 0.2) +
+  scale_fill_gradient2(
+    low = "#B22222",      # Republican red
+    mid = "white",
+    high = "#1E3A8A",     # Democrat blue
+    midpoint = 0,
+    na.value = "grey90",
+    name = "Vote Margin\n(DEM − REP)"
+  ) +
+  theme_void() +
+  labs(title = "Indiana County Vote Margin")
+
+```
+
+```{r}
+#- *Candidate-wise Votes distribution across County Maybe Graphical Plot (is it possible?)*
+df |> count(county_name) ## 92 counties!!!
+
+```
+
+
+### Lets test utils.R
+
+```{r}
+source("../utils.R")
+df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+#County_total_votes_IN_MAP_df
+
+x<- indiana_counties |> left_join(County_total_votes_IN_MAP(df)) |> ggplot() +
+  geom_sf(aes(fill = total_votes), color = "white") +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(
+    title = "Total Votes by County (Indiana)",
+    fill = "Votes"
+  ) +
+  theme_void()
+#plot_IN_MAP_TOTAL_VOTES(County_total_votes_IN_MAP_df, indiana_counties)
+```
+```{r}
+library(plotly)
+ggplotly(x)
+```
+
+```{r}
+County_total_votes_IN_MAP(df)$county_fips
+```
+
+```{r}
+indiana_counties$county_fips
+```
+
+```{r}
+df |> count(county_name) |> arrange(desc(n))
+```
+
+wow,apparently, r has plotly, lets try
+
+```{r}
+df$party_simplified <- ifelse(is.na(df$party_simplified) | (df$party_simplified == ""),"OTHER",df$party_simplified)
+Demo_republic_votes_diff_office_static <- df |> filter(party_simplified %in% c("DEMOCRAT","REPUBLICAN"))|>
+  group_by(office,party_simplified,county_name) |> 
+  summarise(total_votes = sum(votes),.groups = "drop") |>  
+  pivot_wider( names_from  = party_simplified,values_from = total_votes,values_fill = 0) |> ## pivoting only party simplified and total_votes 
+  mutate(vote_diff = DEMOCRAT - REPUBLICAN) 
+Demo_republic_votes_diff_office_static
+```
+
+```{r}
+SelectedCounty <- c("WHITLEY","MARION")
+SelectedOffice <- c("US SENATE","US OFFICE","SECRETARY OF STATE","STATE TREASURER")
+Demo_republic_votes_diff_office_static |>
+  filter(county_name %in% SelectedCounty,office %in% SelectedOffice) |>
+  group_by(office)|>
+summarise(votes_diff = sum(vote_diff),.groups = "drop")
+```
+
