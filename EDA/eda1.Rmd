@@ -350,3 +350,53 @@ Demo_republic_votes_diff_office_static |>
 summarise(votes_diff = sum(vote_diff),.groups = "drop")
 ```
 
+
+
+### Lets try to fetch from my server
+
+```{r}
+library(httr)
+library(jsonlite)
+
+url <- "http://100.110.163.111:8000/data/full"
+
+res <- GET(url)
+data <- fromJSON(content(res, "text"))
+res
+data
+```
+
+```{r}
+apidf <- data
+colnames(apidf)
+```
+
+```{r}
+unique(apidf$`Office Category`)
+```
+
+
+## lets make ui better
+
+
+```{r}
+df<-read.csv("../App/2018-in-precinct-general.csv",header = TRUE)
+df$party_simplified <- ifelse(is.na(df$party_simplified) | (df$party_simplified == ""),"OTHER",df$party_simplified)
+counties <- unique(df$county_name) 
+parties <- unique(df$party_simplified)
+parties_map <- setNames(parties, parties)
+offices <- unique(df$office)
+```
+
+
+```{r}
+parties
+map_parties = c()
+for(i in parties){
+  map_parties[i] = i
+}
+map_parties
+```
+
+
+

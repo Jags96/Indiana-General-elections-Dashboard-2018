@@ -5,6 +5,7 @@ library(sf)
 library(tigris)
 library(tidyr)
 library(plotly)
+library(bslib)
 
 source("utils.R")
 
@@ -14,6 +15,7 @@ df<-read.csv("2018-in-precinct-general.csv",header = TRUE)
 df$party_simplified <- ifelse(is.na(df$party_simplified) | (df$party_simplified == ""),"OTHER",df$party_simplified)
 counties <- unique(df$county_name) 
 parties <- unique(df$party_simplified)
+parties_map <- setNames(parties, parties)
 offices <- unique(df$office)
 
 
@@ -32,7 +34,98 @@ Demo_republic_votes_diff_office_static <- df |>
 ## Basically, it has three tab-style panels, with each of the tab having its filter options 
 ### For better experience plotly can be used in future
 
-ui <- fluidPage(
+ui <- page_navbar(
+  title = "Indiana General Elections Results 2018",
+  theme = bs_theme(version = 5, bootswatch = "lux"),
+  # Indiana Map
+  nav_panel(
+    title = "Indiana Map",
+    card(
+      card_header("Welcome"),
+      "This is the Dashboard to view Indiana State General Elections Results 2018!!",
+      fluidRow(
+        column(6,plotlyOutput("INDIANA_COUNTY_MAP_TOTAL_VOTES")),
+        column(6,plotlyOutput("INDIANA_COUNTY_MAP_DEMO_REPUBLIC"))
+      )
+    )
+  ),
+  nav_panel(
+    title = "Democrat vs Republican",
+    navset_card_tab(
+      title = "Difference between DEM vs REP",
+      card(card_header("DEMO vs REP"),plotOutput("DEMO_REPUB_Bar_plot")),
+      fluidRow(
+        column(width = 6, card(card_header("Select Counties"),
+           selectizeInput(
+          inputId = "SelectedCounty",
+          label = "County:",
+          choices = counties,
+          selected = c("MARION","JOHNSON","LAPORTE"),
+          multiple = TRUE,
+          ## important , this allowed the dropdown to appear out of card frame
+          options = list(
+            dropdownParent = "body",
+            maxItems = NULL)
+          )
+          )
+          ),
+        column(width = 6, card(card_header("Select Offices"),
+           selectizeInput(
+             inputId = "SelectedOffice",
+             label = "Office",
+             choices = offices,
+             selected = c("US SENATE","US OFFICE","SECRETARY OF STATE","STATE TREASURER"),
+             multiple = TRUE,
+            options = list(
+              dropdownParent = "body",
+              maxItems = NULL)
+            )
+          )
+                               )
+          )
+      )
+    ),
+
+    nav_panel(
+      title = "Summary Plots",
+      fluidRow(
+        column(width = 8,card(card_header("County-wise per all selected Parties Plots") ,plotOutput("PartyWise_plot")),
+                          card(card_header("Party-wise per all selected Countie Plots"),plotOutput("CountyWise_plot"))),
+               
+        column(width = 4,
+                 card(card_header("Choose Parties"),
+                 checkboxGroupInput(
+                  inputId = "SelectedParty_summaryplot",
+                  label = "Party:",
+                  choices = parties_map, 
+                  selected = "DEMOCRAT"),
+               helpText("Select parties to compare between County-wise Votes")
+                    ),
+                 card(card_header("Choose Counties"),
+                      selectizeInput(
+                        inputId = "SelectedCounty_summaryplot",
+                        label = "County",
+                        choices = counties,
+                        selected = c("MARION","JOHNSON","LAPORTE"),
+                        multiple = TRUE,
+                        ## important , this allowed the dropdown to appear out of card frame
+                        options = list(
+                          dropdownParent = "body",
+                          maxItems = NULL
+                        )
+                      )
+                      
+                    )
+
+              )
+              )
+              )
+        
+)
+
+
+
+uiold <- fluidPage(
 
     # Application title
     titlePanel("Indiana General Elections Results 2018"),
@@ -150,10 +243,6 @@ server <- function(input, output) {
   # -----------------------------------------------------
     ### DEMO vs REPUB OFFICE BAR PLOT
     
-#     Demo_republic_votes_diff_office_df <- reactive({
-#      Demo_republic_votes_diff_office(df,input$SelectedCounty,input$SelectedOffice)
-#    }) ## use this if df is dynamic
-    
      Demo_republic_votes_diff_office_df <- reactive({
        Demo_republic_votes_diff_office_static |>
          filter(county_name %in% input$SelectedCounty,office %in% input$SelectedOffice) |>
@@ -168,25 +257,20 @@ server <- function(input, output) {
       
   # --------------------------------------------------
       ## Indiana map total votes
-#      County_total_votes_IN_MAP_df <- reactive({
- #       County_total_votes_IN_MAP(df)
-  #    })
       
       ## its plot
       output$INDIANA_COUNTY_MAP_TOTAL_VOTES <- renderPlotly({
         ggplotly(plot_IN_MAP_TOTAL_VOTES(County_total_votes_IN_MAP_df, indiana_counties))
-      })
+      }) |>
+        bindCache("static_map_0")
       
   # --------------------------------------------------    
       ## for IN MAP DEMO vs REP
- #     Demo_republic_votes_diff_df <- reactive({
-#        Demo_republic_votes_diff(df)
-#        }) ## this is for CI df
 
-      ## its plot
-      output$INDIANA_COUNTY_MAP_DEMO_REPUBLIC <- renderPlotly({
+      output$INDIANA_COUNTY_MAP_DEMO_REPUBLIC <- rendercachePlotly({
         ggplotly(plot_IN_MAP_REP_DEMO(Demo_republic_votes_diff_df, indiana_counties))
-      })
+      }) |> 
+        bindCache("static_map")
       
   # --------------------------------------------------
     

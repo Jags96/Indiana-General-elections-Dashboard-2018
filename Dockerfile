@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install R packages
 RUN R -e "install.packages(c('shiny','ggplot2','dplyr','tidyr',\
-  'DT','flextable','plotly','sf','tigris'))"
+  'DT','flextable','plotly','sf','tigris','bslib'))"
 
 # Copy Shiny app
 COPY App /srv/shiny-server/App
