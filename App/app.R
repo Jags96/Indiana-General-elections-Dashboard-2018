@@ -30,6 +30,10 @@ Demo_republic_votes_diff_office_static <- df |>
   pivot_wider( names_from  = party_simplified,values_from = total_votes,values_fill = 0) |> ## pivoting only party simplified and total_votes 
   mutate(vote_diff = DEMOCRAT - REPUBLICAN) 
 
+#### Total Votes and Total Demo and total REpublicans VOtes
+Total_Votes_per_Party <- df |> group_by(party_simplified) |> summarise(total_votes = sum(votes),.groups = "drop")
+
+
 ## I am not using Modularity here, since I am out of time
 ## Basically, it has three tab-style panels, with each of the tab having its filter options 
 ### For better experience plotly can be used in future
@@ -43,17 +47,34 @@ ui <- page_navbar(
     card(
       card_header("Welcome"),
       "This is the Dashboard to view Indiana State General Elections Results 2018!!",
+      layout_column_wrap(
+        value_box(
+          title = "Total Votes across all offices",
+          value = textOutput("TotalVotes"),
+          # showcase = bs_icon("vote"),
+          theme = "green"
+        ),
+        value_box(
+          title = "Total Votes for DEMOCRATS",
+          value = textOutput("TotalVotesDEMOCRATs"),
+          theme = DEM_THEME
+        ),
+        value_box(
+          title = "Total Votes for REPUBLICANS",
+          value = textOutput("TotalVotesREPUBLICANs"),
+          theme = REP_THEME
+        )
+        
+      ),
       fluidRow(
-        column(6,plotlyOutput("INDIANA_COUNTY_MAP_TOTAL_VOTES")),
-        column(6,plotlyOutput("INDIANA_COUNTY_MAP_DEMO_REPUBLIC"))
+        column(6,card(card_header("Total Votes in Indiana"),plotlyOutput("INDIANA_COUNTY_MAP_TOTAL_VOTES"),full_screen = TRUE)),
+        column(6,card(card_header("DEMO - REPU Votes Difference in Indiana"),plotlyOutput("INDIANA_COUNTY_MAP_DEMO_REPUBLIC"),full_screen = TRUE))
       )
     )
   ),
   nav_panel(
     title = "Democrat vs Republican",
-    navset_card_tab(
-      title = "Difference between DEM vs REP",
-      card(card_header("DEMO vs REP"),plotOutput("DEMO_REPUB_Bar_plot")),
+      card(card_header("DEMO vs REP"),min_height = 500,plotOutput("DEMO_REPUB_Bar_plot"),full_screen = TRUE),
       fluidRow(
         column(width = 6, card(card_header("Select Counties"),
            selectizeInput(
@@ -83,7 +104,6 @@ ui <- page_navbar(
           )
                                )
           )
-      )
     ),
 
     nav_panel(
@@ -273,7 +293,19 @@ server <- function(input, output) {
         bindCache("static_map")
       
   # --------------------------------------------------
-    
+    ## Value_box textOutput
+      ## for democrats
+      output$TotalVotesDEMOCRATs <- reactive({
+        Total_Votes_per_Party[Total_Votes_per_Party$party_simplified == "DEMOCRAT",]$total_votes
+        })
+    ## for Repub
+      output$TotalVotesREPUBLICANs <- reactive({
+        Total_Votes_per_Party[Total_Votes_per_Party$party_simplified == "REPUBLICAN",]$total_votes
+      })
+    ## for Total across all offices and parties
+      output$TotalVotes <- reactive({
+        sum(Total_Votes_per_Party$total_votes)
+      })
 }
 
 # Run the application 

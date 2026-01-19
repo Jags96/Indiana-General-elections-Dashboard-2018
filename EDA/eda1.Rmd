@@ -398,5 +398,9 @@ for(i in parties){
 map_parties
 ```
 
+```{r}
+Total_Votes_per_Party <- df |> group_by(party_simplified) |> summarise(total_votes = sum(votes),.groups = "drop")
+Total_Votes_per_Party[Total_Votes_per_Party$party_simplified == "DEMOCRAT",]$total_votes
+```
 
 

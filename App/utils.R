@@ -10,6 +10,12 @@ library(tidyr)
 
 DEM_COLOR <- "#1E3A8A"
 REP_COLOR <- "#B22222"
+
+## for Value BOX themes
+DEM_THEME <- value_box_theme(bg = "#1E3A8A", fg = "#FFFFFF")
+REP_THEME <- value_box_theme(bg = "#B22222", fg = "#FFFFFF")
+
+
 UNKNOWN_COLOR <- "grey90"
 #COUNTY_NAMES <- can be hard coded, since it static values, but  I will use unique(df$county_names) in app.R
 
