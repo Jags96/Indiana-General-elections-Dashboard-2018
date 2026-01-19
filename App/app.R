@@ -267,7 +267,7 @@ server <- function(input, output) {
   # --------------------------------------------------    
       ## for IN MAP DEMO vs REP
 
-      output$INDIANA_COUNTY_MAP_DEMO_REPUBLIC <- rendercachePlotly({
+      output$INDIANA_COUNTY_MAP_DEMO_REPUBLIC <- renderPlotly({
         ggplotly(plot_IN_MAP_REP_DEMO(Demo_republic_votes_diff_df, indiana_counties))
       }) |> 
         bindCache("static_map")
