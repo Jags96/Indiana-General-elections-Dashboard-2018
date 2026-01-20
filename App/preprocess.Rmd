@@ -1,0 +1,31 @@
+---
+title: "preprocess"
+output: html_document
+---
+
+```{r, context = 'data',include=FALSE}
+## If the df is Continuously integrated, then we will need to put it into reactive method
+df<-read.csv("2018-in-precinct-general.csv",header = TRUE)
+df$party_simplified <- ifelse(is.na(df$party_simplified) | (df$party_simplified == ""),"OTHER",df$party_simplified)
+
+counties <- unique(df$county_name) 
+parties <- unique(df$party_simplified)
+parties_map <- setNames(parties, parties)
+offices <- unique(df$office)
+
+```
+
+
+#### Its better to store already group by-ed DF as well, since its quick filter 
+county_party_groupby <- df |> group_by(county_name, party_simplified)|> summarise(total_votes = sum(votes),.groups = "drop")
+Demo_republic_votes_diff_df <- Demo_republic_votes_diff(df) ## can be used as global object
+County_total_votes_IN_MAP_df <- County_total_votes_IN_MAP(df) 
+Demo_republic_votes_diff_office_static <- df |> 
+  filter(party_simplified %in% c("DEMOCRAT","REPUBLICAN"))|>
+  group_by(office,party_simplified,county_name) |> 
+  summarise(total_votes = sum(votes),.groups = "drop") |>  
+  pivot_wider( names_from  = party_simplified,values_from = total_votes,values_fill = 0) |> ## pivoting only party simplified and total_votes 
+  mutate(vote_diff = DEMOCRAT - REPUBLICAN) 
+
+#### Total Votes and Total Demo and total REpublicans VOtes
+Total_Votes_per_Party <- df |> group_by(party_simplified) |> summarise(total_votes = sum(votes),.groups = "drop")

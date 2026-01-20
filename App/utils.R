@@ -3,6 +3,7 @@ library(sf)
 library(tigris)
 library(ggplot2)
 library(dplyr)
+library(bslib)
 library(tidyr)
 
 
@@ -123,15 +124,19 @@ plot_IN_MAP_REP_DEMO <- function(Demo_republic_votes_diff_df, indiana_counties){
 plot_BAR_DEMO_REP_OFFICE <- 
   function(Demo_republic_votes_diff_office_df,
            title ="Democrat vs Republican Vote Difference by Office" ){
+    
+    Demo_republic_votes_diff_office_df$is_DEMO_lead <- factor(Demo_republic_votes_diff_office_df$vote_diff > 0, levels = c(TRUE, FALSE) )
+      
     Demo_republic_votes_diff_office_df |> 
-    ggplot( aes(x = office, y = vote_diff, fill = vote_diff > 0)) +
+    ggplot( aes(x = office, y = vote_diff, fill = is_DEMO_lead)) +
     geom_col() +
     coord_flip() +
     labs(
       title = title,
+      x = "Office",
       y = "Vote Difference (DEM - REP)"
     ) +
-    scale_fill_manual(values = c(DEM_COLOR, REP_COLOR), guide = "none")
+    scale_fill_manual(values = c("FALSE" = REP_COLOR,"TRUE" = DEM_COLOR), guide = "none") + theme_minimal()
 }
 
 
