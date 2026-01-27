@@ -14,7 +14,7 @@ The application visualizes:
 ## Tech Stack
 
 * **R / Shiny**
-* **ggplot2, dplyr, tidyr**
+* **ggplot2, dplyr, tidyr, bslib**
 * **sf, tigris** (geospatial data)
 * **plotly** (interactive visualization)
 * **Docker (rocker/shiny base image)**
@@ -30,6 +30,10 @@ The application visualizes:
     ├── app.R
     ├── utils.R
     └── 2018-in-precinct-general.csv
+    └── R/
+        ├── DemoVSRepub_Offices.R
+        ├── IndianaMap.R
+        └── SummaryPlots.R
 └── EDA/
     └── eda1.Rmd
 
