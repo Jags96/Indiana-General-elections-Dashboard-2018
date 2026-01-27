@@ -8,9 +8,14 @@ library(tidyr)
 ```
 
 ```{r}
-df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+df<-read.csv("../App/2018-in-precinct-general.csv",header = TRUE)
 colnames(df)
 ```
+```{r}
+df |> head(10)
+```
+
+
 ```{r}
 unique(df$party_detailed)
 unique(df$party_simplified)
@@ -34,7 +39,7 @@ county_party_groupby
 ## lets resume again
 
 ```{r}
-df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+df<-read.csv("../App/2018-in-precinct-general.csv",header = TRUE)
 df$party_simplified[is.na(df$party_simplified)] <- "OTHER"
 counties <- unique(df$county_name) ## will sort later
 parties <- unique(df$party_simplified)
@@ -298,8 +303,8 @@ df |> count(county_name) ## 92 counties!!!
 ### Lets test utils.R
 
 ```{r}
-source("../utils.R")
-df<-read.csv("../2018-in-precinct-general.csv",header = TRUE)
+source("../App/utils.R")
+df<-read.csv("../App/2018-in-precinct-general.csv",header = TRUE)
 #County_total_votes_IN_MAP_df
 
 x<- indiana_counties |> left_join(County_total_votes_IN_MAP(df)) |> ggplot() +
@@ -312,6 +317,10 @@ x<- indiana_counties |> left_join(County_total_votes_IN_MAP(df)) |> ggplot() +
   theme_void()
 #plot_IN_MAP_TOTAL_VOTES(County_total_votes_IN_MAP_df, indiana_counties)
 ```
+
+
+
+
 ```{r}
 library(plotly)
 ggplotly(x)
