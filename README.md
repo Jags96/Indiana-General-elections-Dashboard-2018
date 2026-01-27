@@ -116,4 +116,12 @@ This project demonstrates:
 * **Geospatial data handling** with `sf`
 * **Containerized deployment** using Docker
 
+--
+> **Note:** If you’d like to view the dashboard without running Docker, you can use the Render link below.  
+> Please be aware that Render’s **free tier can take a significant amount of time to spin up**, and Plotly performance may be limited. For the best experience, I recommend using Docker instead.  
+>  
+> 🔗 **Render Link:** https://indiana-general-elections-dashboard-2018.onrender.com  
+>  
+> Thank you!
+
 
